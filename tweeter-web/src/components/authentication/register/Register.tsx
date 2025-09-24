@@ -1,15 +1,14 @@
 import "./Register.css";
 import "bootstrap/dist/css/bootstrap.css";
 import { useContext } from "react";
-import { UserInfoActionsContext } from "../../userInfo/UserInfoContexts";
+import { useUserInfoActions } from "../../userInfo/UserInfoHooks";
 import { ChangeEvent, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import AuthenticationFormLayout from "../AuthenticationFormLayout";
 import AuthenticationFields from "../AuthenticationFields";
 import { AuthToken, FakeData, User } from "tweeter-shared";
-import { ToastActionsContext } from "../../toaster/ToastContexts";
+import { useMessageActions } from "../../toaster/MessageHooks";
 import { Buffer } from "buffer";
-import { ToastType } from "../../toaster/Toast";
 
 const Register = () => {
   const [firstName, setFirstName] = useState("");
@@ -23,8 +22,8 @@ const Register = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   const navigate = useNavigate();
-  const { updateUserInfo } = useContext(UserInfoActionsContext);
-  const { displayToast } = useContext(ToastActionsContext);
+  const { updateUserInfo } = useUserInfoActions();
+  const { displayErrorMessage } = useMessageActions();
 
   const checkSubmitButtonStatus = (): boolean => {
     return (
@@ -100,11 +99,7 @@ const Register = () => {
       updateUserInfo(user, user, authToken, rememberMe);
       navigate(`/feed/${user.alias}`);
     } catch (error) {
-      displayToast(
-        ToastType.Error,
-        `Failed to register user because of exception: ${error}`,
-        0
-      );
+      displayErrorMessage(`Failed to register user because of exception: ${error}`);
     } finally {
       setIsLoading(false);
     }
