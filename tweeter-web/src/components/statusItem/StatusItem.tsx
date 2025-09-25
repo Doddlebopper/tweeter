@@ -1,7 +1,5 @@
-import { useContext } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { AuthToken, FakeData, Status, User } from "tweeter-shared";
-import { useMessageActions } from "../toaster/MessageHooks";
+import { Link } from "react-router-dom";
+import { Status} from "tweeter-shared";
 import { useUserNavigation } from "../userInfo/UserInfoHooks";
 import Post from "./Post";
 

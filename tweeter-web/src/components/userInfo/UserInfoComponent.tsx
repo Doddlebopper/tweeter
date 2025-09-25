@@ -1,5 +1,4 @@
 import "./UserInfoComponent.css";
-import { useContext } from "react";
 import { useUserInfo, useUserInfoActions } from "./UserInfoHooks";
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
