@@ -1,47 +1,47 @@
 import { useUserInfo, useUserInfoActions } from "../userInfo/UserInfoHooks";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import InfiniteScroll from "react-infinite-scroll-component";
-import { AuthToken, FakeData, User } from "tweeter-shared";
+import { AuthToken, User } from "tweeter-shared";
 import { useMessageActions } from "../toaster/MessageHooks";
 import { useParams } from "react-router-dom";
 import UserItem from "../userItem/UserItem";
+import { FolloweeView } from "../../presenter/FolloweePresenter";
+import { UserItemPresenter, UserItemView } from "../../presenter/UserItemPresenter";
 
 export const PAGE_SIZE = 10;
 
 interface UserItemScrollerProps {
   featurePath: string;
-  loadMoreFunction: (
-    authToken: AuthToken,
-    userAlias: string,
-    pageSize: number,
-    lastUser: User | null
-  ) => Promise<[User[], boolean]>;
-  errorMessage: string;
+  presenterFactory: (listener: FolloweeView) => UserItemPresenter;
 }
 
 const UserItemScroller = ({ 
   featurePath, 
-  loadMoreFunction, 
-  errorMessage 
+  presenterFactory
 }: UserItemScrollerProps) => {
   const { displayErrorMessage } = useMessageActions();
   const [items, setItems] = useState<User[]>([]);
-  const [hasMoreItems, setHasMoreItems] = useState(true);
-  const [lastItem, setLastItem] = useState<User | null>(null);
-
-  const addItems = (newItems: User[]) =>
-    setItems((previousItems) => [...previousItems, ...newItems]);
 
   const { displayedUser, authToken } = useUserInfo();
   const { setDisplayedUser } = useUserInfoActions();
   const { displayedUser: displayedUserAliasParam } = useParams();
 
+  const listener: UserItemView = {
+    addItems: (newItems: User[]) => setItems((previousItems) => [...previousItems, ...newItems]),
+    displayErrorMessage: displayErrorMessage
+  };
+
+  const presenterRef = useRef<UserItemPresenter | null>(null);
+  if(!presenterRef.current) {
+    presenterRef.current = presenterFactory(listener);
+  }
+  //const presenter = presenterRef.current;
+
   const getUser = async (
     authToken: AuthToken,
     alias: string
   ): Promise<User | null> => {
-    // TODO: Replace with the result of calling server
-    return FakeData.instance.findUserByAlias(alias);
+    return presenterRef.current!.getUser(authToken, alias);
   };
 
   // Update the displayed user context variable whenever the displayedUser url parameter changes. This allows browser forward and back buttons to work correctly.
@@ -51,7 +51,7 @@ const UserItemScroller = ({
       displayedUserAliasParam &&
       displayedUserAliasParam != displayedUser!.alias
     ) {
-      getUser(authToken!, displayedUserAliasParam!).then((toUser) => {
+      presenterRef.current!.getUser(authToken!, displayedUserAliasParam!).then((toUser) => {
         if (toUser) {
           setDisplayedUser(toUser);
         }
@@ -62,30 +62,16 @@ const UserItemScroller = ({
   // Initialize the component whenever the displayed user changes
   useEffect(() => {
     reset();
-    loadMoreItems(null);
+    loadMoreItems();
   }, [displayedUser]);
 
   const reset = async () => {
     setItems(() => []);
-    setLastItem(() => null);
-    setHasMoreItems(() => true);
+    presenterRef.current!.reset();
   };
 
-  const loadMoreItems = async (lastItem: User | null) => {
-    try {
-      const [newItems, hasMore] = await loadMoreFunction(
-        authToken!,
-        displayedUser!.alias,
-        PAGE_SIZE,
-        lastItem
-      );
-
-      setHasMoreItems(() => hasMore);
-      setLastItem(() => newItems[newItems.length - 1]);
-      addItems(newItems);
-    } catch (error) {
-      displayErrorMessage(`${errorMessage}: ${error}`);
-    }
+  const loadMoreItems = async () => {
+    presenterRef.current!.loadMoreItems(authToken!, displayedUser!.alias);
   };
 
   return (
@@ -93,8 +79,8 @@ const UserItemScroller = ({
       <InfiniteScroll
         className="pr-0 mr-0"
         dataLength={items.length}
-        next={() => loadMoreItems(lastItem)}
-        hasMore={hasMoreItems}
+        next={() => loadMoreItems()}
+        hasMore={presenterRef.current!.hasMoreItems}
         loader={<h4>Loading...</h4>}
       >
         {items.map((item, index) => (

@@ -12,29 +12,13 @@ import Register from "./components/authentication/register/Register";
 import MainLayout from "./components/mainLayout/MainLayout";
 import Toaster from "./components/toaster/Toaster";
 import StatusItemScroller from "./components/mainLayout/StatusItemScroller";
-import { AuthToken, FakeData, Status, User } from "tweeter-shared";
 import UserItemScroller from "./components/mainLayout/UserItemScroller";
+import { UserItemView } from "./presenter/UserItemPresenter";
+import { FolloweePresenter } from "./presenter/FolloweePresenter";
+import { FollowerPresenter } from "./presenter/FollowerPresenter";
+import { StatusService } from "./model.service/StatusService";
 
-const loadMoreFeedItems = async (
-  authToken: AuthToken,
-  userAlias: string,
-  pageSize: number,
-  lastItem: Status | null
-): Promise<[Status[], boolean]> => {
-  // TODO: Replace with the result of calling server
-  return FakeData.instance.getPageOfStatuses(lastItem, pageSize);
-};
-
-const loadMoreStoryItems = async (
-  authToken: AuthToken,
-  userAlias: string,
-  pageSize: number,
-  lastItem: Status | null
-): Promise<[Status[], boolean]> => {
-  // TODO: Replace with the result of calling server
-  return FakeData.instance.getPageOfStatuses(lastItem, pageSize);
-};
-
+const statusService = new StatusService();
 
 const App = () => {
   const { currentUser, authToken } = useUserInfo();
@@ -60,34 +44,14 @@ const App = () => {
 const AuthenticatedRoutes = () => {
   const { displayedUser } = useUserInfo();
 
-  const loadMoreFollowees = async (
-    authToken: AuthToken,
-    userAlias: string,
-    pageSize: number,
-    lastUser: User | null
-  ): Promise<[User[], boolean]> => {
-    // TODO: Replace with the result of calling server
-    return FakeData.instance.getPageOfUsers(lastUser, pageSize, null);
-  };
-
-  const loadMoreFollowers = async (
-  authToken: AuthToken,
-  userAlias: string,
-  pageSize: number,
-  lastUser: User | null
-): Promise<[User[], boolean]> => {
-  // TODO: Replace with the result of calling server
-  return FakeData.instance.getPageOfUsers(lastUser, pageSize, null);
-};
-
   return (
     <Routes>
       <Route element={<MainLayout />}>
         <Route index element={<Navigate to={`/feed/${displayedUser!.alias}`} />} />
-        <Route path="feed/:displayedUser" element={<StatusItemScroller featurePath="/feed" loadMoreFunction={loadMoreFeedItems} errorMessage="Failed to load feed items because of exception" />} />
-        <Route path="story/:displayedUser" element={<StatusItemScroller featurePath="/story" loadMoreFunction={loadMoreStoryItems} errorMessage="Failed to load story items because of exception" />} />
-        <Route path="followees/:displayedUser" element={<UserItemScroller key={ 'followees=$(displayedUser!.alias)'} featurePath="/followees" loadMoreFunction={loadMoreFollowees} errorMessage="Failed to load followees because of exception" />} />
-        <Route path="followers/:displayedUser" element={<UserItemScroller key={ 'followers=$(displayedUser!.alias)'} featurePath="/followers" loadMoreFunction={loadMoreFollowers} errorMessage="Failed to load followers because of exception" />} />
+        <Route path="feed/:displayedUser" element={<StatusItemScroller featurePath="/feed" loadMoreFunction={(authToken, userAlias, pageSize, lastStatus) => statusService.loadMoreFeedItems(authToken, userAlias, pageSize, lastStatus)} errorMessage="Failed to load feed items because of exception" />} />
+        <Route path="story/:displayedUser" element={<StatusItemScroller featurePath="/story" loadMoreFunction={(authToken, userAlias, pageSize, lastStatus) => statusService.loadMoreStoryItems(authToken, userAlias, pageSize, lastStatus)} errorMessage="Failed to load story items because of exception" />} />
+        <Route path="followees/:displayedUser" element={<UserItemScroller key={ 'followees=$(displayedUser!.alias)'} featurePath="/followees" presenterFactory={(view: UserItemView) => new FolloweePresenter(view)}/>} />
+        <Route path="followers/:displayedUser" element={<UserItemScroller key={ 'followers=$(displayedUser!.alias)'} featurePath="/followers" presenterFactory={(view: UserItemView) => new FollowerPresenter(view)}/>} />
         <Route path="logout" element={<Navigate to="/login" />} />
         <Route path="*" element={<Navigate to={`/feed/${displayedUser!.alias}`} />} />
       </Route>
