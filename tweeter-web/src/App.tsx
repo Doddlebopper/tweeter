@@ -1,5 +1,4 @@
 import "./App.css";
-import { useContext } from "react";
 import { useUserInfo } from "./components/userInfo/UserInfoHooks";
 import {
   BrowserRouter,
@@ -12,10 +11,9 @@ import Login from "./components/authentication/login/Login";
 import Register from "./components/authentication/register/Register";
 import MainLayout from "./components/mainLayout/MainLayout";
 import Toaster from "./components/toaster/Toaster";
-//import FolloweesScroller from "./components/mainLayout/FolloweesScroller";
-//import FollowersScroller from "./components/mainLayout/FollowersScroller";
-import StatusItemScroller, { loadMoreFollowees, loadMoreFollowers } from "./components/mainLayout/StatusItemScroller";
-import { AuthToken, FakeData, Status } from "tweeter-shared";
+import StatusItemScroller from "./components/mainLayout/StatusItemScroller";
+import { AuthToken, FakeData, Status, User } from "tweeter-shared";
+import UserItemScroller from "./components/mainLayout/UserItemScroller";
 
 const loadMoreFeedItems = async (
   authToken: AuthToken,
@@ -62,14 +60,34 @@ const App = () => {
 const AuthenticatedRoutes = () => {
   const { displayedUser } = useUserInfo();
 
+  const loadMoreFollowees = async (
+    authToken: AuthToken,
+    userAlias: string,
+    pageSize: number,
+    lastUser: User | null
+  ): Promise<[User[], boolean]> => {
+    // TODO: Replace with the result of calling server
+    return FakeData.instance.getPageOfUsers(lastUser, pageSize, null);
+  };
+
+  const loadMoreFollowers = async (
+  authToken: AuthToken,
+  userAlias: string,
+  pageSize: number,
+  lastUser: User | null
+): Promise<[User[], boolean]> => {
+  // TODO: Replace with the result of calling server
+  return FakeData.instance.getPageOfUsers(lastUser, pageSize, null);
+};
+
   return (
     <Routes>
       <Route element={<MainLayout />}>
         <Route index element={<Navigate to={`/feed/${displayedUser!.alias}`} />} />
         <Route path="feed/:displayedUser" element={<StatusItemScroller featurePath="/feed" loadMoreFunction={loadMoreFeedItems} errorMessage="Failed to load feed items because of exception" />} />
         <Route path="story/:displayedUser" element={<StatusItemScroller featurePath="/story" loadMoreFunction={loadMoreStoryItems} errorMessage="Failed to load story items because of exception" />} />
-        <Route path="followees/:displayedUser" element={<StatusItemScroller featurePath="/followees" loadMoreFunction={loadMoreFollowees} errorMessage="Failed to load followees because of exception" />} />
-        <Route path="followers/:displayedUser" element={<StatusItemScroller featurePath="/followers" loadMoreFunction={loadMoreFollowers} errorMessage="Failed to load followers because of exception" />} />
+        <Route path="followees/:displayedUser" element={<UserItemScroller key={ 'followees=$(displayedUser!.alias)'} featurePath="/followees" loadMoreFunction={loadMoreFollowees} errorMessage="Failed to load followees because of exception" />} />
+        <Route path="followers/:displayedUser" element={<UserItemScroller key={ 'followers=$(displayedUser!.alias)'} featurePath="/followers" loadMoreFunction={loadMoreFollowers} errorMessage="Failed to load followers because of exception" />} />
         <Route path="logout" element={<Navigate to="/login" />} />
         <Route path="*" element={<Navigate to={`/feed/${displayedUser!.alias}`} />} />
       </Route>

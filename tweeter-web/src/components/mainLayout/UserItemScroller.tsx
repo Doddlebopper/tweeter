@@ -1,11 +1,9 @@
-import { useContext } from "react";
 import { useUserInfo, useUserInfoActions } from "../userInfo/UserInfoHooks";
 import { useState, useEffect } from "react";
 import InfiniteScroll from "react-infinite-scroll-component";
 import { AuthToken, FakeData, User } from "tweeter-shared";
 import { useMessageActions } from "../toaster/MessageHooks";
 import { useParams } from "react-router-dom";
-import { ToastType } from "../toaster/Toast";
 import UserItem from "../userItem/UserItem";
 
 export const PAGE_SIZE = 10;

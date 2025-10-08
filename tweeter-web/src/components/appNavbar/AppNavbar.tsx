@@ -1,5 +1,4 @@
 import "./AppNavbar.css";
-import { useContext } from "react";
 import { useUserInfo, useUserInfoActions } from "../userInfo/UserInfoHooks";
 import { Container, Nav, Navbar } from "react-bootstrap";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";

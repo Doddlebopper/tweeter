@@ -1,6 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
 import { AuthToken, User, FakeData } from "tweeter-shared";
-import { useContext } from "react";
 import { useUserNavigation } from "../userInfo/UserInfoHooks";
 
 interface Props {

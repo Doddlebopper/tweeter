@@ -1,34 +1,13 @@
-import { useContext } from "react";
 import { useUserInfo, useUserInfoActions } from "../userInfo/UserInfoHooks";
 import { AuthToken, FakeData, Status, User } from "tweeter-shared";
 import { useState, useEffect } from "react";
 import InfiniteScroll from "react-infinite-scroll-component";
 import { useMessageActions } from "../toaster/MessageHooks";
 import { useParams } from "react-router-dom";
-import { ToastType } from "../toaster/Toast";
 import StatusItem from "../statusItem/StatusItem";
 
 export const PAGE_SIZE = 10;
 
-export const loadMoreFollowees = async (
-  authToken: AuthToken,
-  userAlias: string,
-  pageSize: number,
-  lastItem: Status | null
-): Promise<[Status[], boolean]> => {
-  // TODO: Replace with the result of calling server
-  return FakeData.instance.getPageOfStatuses(lastItem, pageSize);
-};
-
-export const loadMoreFollowers = async (
-  authToken: AuthToken,
-  userAlias: string,
-  pageSize: number,
-  lastItem: Status | null
-): Promise<[Status[], boolean]> => {
-  // TODO: Replace with the result of calling server
-  return FakeData.instance.getPageOfStatuses(lastItem, pageSize);
-};
 
 interface StatusItemScrollerProps {
   featurePath: string;

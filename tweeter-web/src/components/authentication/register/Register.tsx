@@ -1,6 +1,5 @@
 import "./Register.css";
 import "bootstrap/dist/css/bootstrap.css";
-import { useContext } from "react";
 import { useUserInfoActions } from "../../userInfo/UserInfoHooks";
 import { ChangeEvent, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
