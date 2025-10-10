@@ -16,9 +16,9 @@ import UserItemScroller from "./components/mainLayout/UserItemScroller";
 import { UserItemView } from "./presenter/UserItemPresenter";
 import { FolloweePresenter } from "./presenter/FolloweePresenter";
 import { FollowerPresenter } from "./presenter/FollowerPresenter";
-import { StatusService } from "./model.service/StatusService";
-
-const statusService = new StatusService();
+import { FeedPresenter } from "./presenter/FeedPresenter";
+import { StoryPresenter } from "./presenter/StoryPresenter";
+import { StatusItemView } from "./presenter/StatusItemPresenter";
 
 const App = () => {
   const { currentUser, authToken } = useUserInfo();
@@ -48,8 +48,8 @@ const AuthenticatedRoutes = () => {
     <Routes>
       <Route element={<MainLayout />}>
         <Route index element={<Navigate to={`/feed/${displayedUser!.alias}`} />} />
-        <Route path="feed/:displayedUser" element={<StatusItemScroller featurePath="/feed" loadMoreFunction={(authToken, userAlias, pageSize, lastStatus) => statusService.loadMoreFeedItems(authToken, userAlias, pageSize, lastStatus)} errorMessage="Failed to load feed items because of exception" />} />
-        <Route path="story/:displayedUser" element={<StatusItemScroller featurePath="/story" loadMoreFunction={(authToken, userAlias, pageSize, lastStatus) => statusService.loadMoreStoryItems(authToken, userAlias, pageSize, lastStatus)} errorMessage="Failed to load story items because of exception" />} />
+        <Route path="feed/:displayedUser" element={<StatusItemScroller featurePath="/feed" presenterFactory={(view: StatusItemView) => new FeedPresenter(view)}/>} />
+        <Route path="story/:displayedUser" element={<StatusItemScroller featurePath="/story" presenterFactory={(view: StatusItemView) => new StoryPresenter(view)}/>} />
         <Route path="followees/:displayedUser" element={<UserItemScroller key={ 'followees=$(displayedUser!.alias)'} featurePath="/followees" presenterFactory={(view: UserItemView) => new FolloweePresenter(view)}/>} />
         <Route path="followers/:displayedUser" element={<UserItemScroller key={ 'followers=$(displayedUser!.alias)'} featurePath="/followers" presenterFactory={(view: UserItemView) => new FollowerPresenter(view)}/>} />
         <Route path="logout" element={<Navigate to="/login" />} />

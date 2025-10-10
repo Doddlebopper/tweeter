@@ -1,49 +1,43 @@
 import { useUserInfo, useUserInfoActions } from "../userInfo/UserInfoHooks";
-import { AuthToken, FakeData, Status, User } from "tweeter-shared";
-import { useState, useEffect } from "react";
+import { Status } from "tweeter-shared";
+import { useState, useEffect, useRef } from "react";
 import InfiniteScroll from "react-infinite-scroll-component";
 import { useMessageActions } from "../toaster/MessageHooks";
 import { useParams } from "react-router-dom";
 import StatusItem from "../statusItem/StatusItem";
+import { StatusItemPresenter, StatusItemView } from "../../presenter/StatusItemPresenter";
+import { UserService } from "../../model.service/UserService";
 
 export const PAGE_SIZE = 10;
 
 
 interface StatusItemScrollerProps {
   featurePath: string;
-  loadMoreFunction: (
-    authToken: AuthToken,
-    userAlias: string,
-    pageSize: number,
-    lastStatus: Status | null
-  ) => Promise<[Status[], boolean]>;
-  errorMessage: string;
+  presenterFactory: (listener: StatusItemView) => StatusItemPresenter;
 }
 
 const StatusItemScroller = ({ 
   featurePath, 
-  loadMoreFunction, 
-  errorMessage 
+  presenterFactory
 }: StatusItemScrollerProps) => {
   const { displayErrorMessage } = useMessageActions();
   const [items, setItems] = useState<Status[]>([]);
-  const [hasMoreItems, setHasMoreItems] = useState(true);
-  const [lastItem, setLastItem] = useState<Status | null>(null);
-
-  const addItems = (newItems: Status[]) =>
-    setItems((previousItems) => [...previousItems, ...newItems]);
 
   const { displayedUser, authToken } = useUserInfo();
   const { setDisplayedUser } = useUserInfoActions();
   const { displayedUser: displayedUserAliasParam } = useParams();
 
-  const getUser = async (
-    authToken: AuthToken,
-    alias: string
-  ): Promise<User | null> => {
-    // TODO: Replace with the result of calling server
-    return FakeData.instance.findUserByAlias(alias);
+  const listener: StatusItemView = {
+    addItems: (newItems: Status[]) => setItems((previousItems) => [...previousItems, ...newItems]),
+    displayErrorMessage: displayErrorMessage
   };
+
+  const presenterRef = useRef<StatusItemPresenter | null>(null);
+  if (!presenterRef.current) {
+    presenterRef.current = presenterFactory(listener);
+  }
+
+  const userService = new UserService();
 
   // Update the displayed user context variable whenever the displayedUser url parameter changes. This allows browser forward and back buttons to work correctly.
   useEffect(() => {
@@ -52,7 +46,7 @@ const StatusItemScroller = ({
       displayedUserAliasParam &&
       displayedUserAliasParam != displayedUser!.alias
     ) {
-      getUser(authToken!, displayedUserAliasParam!).then((toUser) => {
+      userService.getUser(authToken!, displayedUserAliasParam!).then((toUser) => {
         if (toUser) {
           setDisplayedUser(toUser);
         }
@@ -63,30 +57,16 @@ const StatusItemScroller = ({
   // Initialize the component whenever the displayed user changes
   useEffect(() => {
     reset();
-    loadMoreItems(null);
+    loadMoreItems();
   }, [displayedUser]);
 
   const reset = async () => {
     setItems(() => []);
-    setLastItem(() => null);
-    setHasMoreItems(() => true);
+    presenterRef.current!.reset();
   };
 
-  const loadMoreItems = async (lastItem: Status | null) => {
-    try {
-      const [newItems, hasMore] = await loadMoreFunction(
-        authToken!,
-        displayedUser!.alias,
-        PAGE_SIZE,
-        lastItem
-      );
-
-      setHasMoreItems(() => hasMore);
-      setLastItem(() => newItems[newItems.length - 1]);
-      addItems(newItems);
-    } catch (error) {
-      displayErrorMessage(`${errorMessage}: ${error}`);
-    }
+  const loadMoreItems = async () => {
+    presenterRef.current!.loadMoreItems(authToken!, displayedUser!.alias);
   };
 
   return (
@@ -94,8 +74,8 @@ const StatusItemScroller = ({
       <InfiniteScroll
         className="pr-0 mr-0"
         dataLength={items.length}
-        next={() => loadMoreItems(lastItem)}
-        hasMore={hasMoreItems}
+        next={() => loadMoreItems()}
+        hasMore={presenterRef.current!.hasMoreItems}
         loader={<h4>Loading...</h4>}
       >
         {items.map((item, index) => (
