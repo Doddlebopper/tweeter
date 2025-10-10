@@ -35,14 +35,6 @@ const UserItemScroller = ({
   if(!presenterRef.current) {
     presenterRef.current = presenterFactory(listener);
   }
-  //const presenter = presenterRef.current;
-
-  const getUser = async (
-    authToken: AuthToken,
-    alias: string
-  ): Promise<User | null> => {
-    return presenterRef.current!.getUser(authToken, alias);
-  };
 
   // Update the displayed user context variable whenever the displayedUser url parameter changes. This allows browser forward and back buttons to work correctly.
   useEffect(() => {
