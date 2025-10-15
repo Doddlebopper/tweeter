@@ -1,28 +1,23 @@
 import { AuthToken, User } from "tweeter-shared";
 import { AuthenticationService } from "../model.service/AuthenticationService";
 import { Buffer } from "buffer";
+import { Presenter, View } from "./Presenter";
 
-export interface RegisterView {
+export interface RegisterView extends View {
     setIsLoading: (isLoading: boolean) => void;
     updateUserInfo: (currentUser: User, displayedUser: User, authToken: AuthToken, rememberMe: boolean) => void;
     navigate: (path: string) => void;
-    displayErrorMessage: (message: string) => void;
     setImageUrl: (url: string) => void;
     setImageBytes: (bytes: Uint8Array) => void;
     setImageFileExtension: (extension: string) => void;
 }
 
-export class RegisterPresenter {
+export class RegisterPresenter extends Presenter<RegisterView> {
     private authenticationService: AuthenticationService;
-    private _view: RegisterView;
 
     public constructor(view: RegisterView) {
-        this._view = view;
+        super(view);
         this.authenticationService = new AuthenticationService();
-    }
-
-    protected get view(): RegisterView {
-        return this._view;
     }
 
     public async doRegister(
@@ -34,9 +29,9 @@ export class RegisterPresenter {
         imageFileExtension: string,
         rememberMe: boolean
     ) {
-        try {
-            this.view.setIsLoading(true);
+        this.view.setIsLoading(true);
 
+        this.doFailureReportingOperation(async () => {
             const [user, authToken] = await this.authenticationService.register(
                 firstName,
                 lastName,
@@ -48,11 +43,9 @@ export class RegisterPresenter {
 
             this.view.updateUserInfo(user, user, authToken, rememberMe);
             this.view.navigate(`/feed/${user.alias}`);
-        } catch (error) {
-            this.view.displayErrorMessage(`Failed to register user because of exception: ${error}`);
-        } finally {
-            this.view.setIsLoading(false);
-        }
+        }, "register user");
+
+        this.view.setIsLoading(false);
     }
 
     public handleImageFile(file: File | undefined): void {
