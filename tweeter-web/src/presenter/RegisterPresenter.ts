@@ -1,23 +1,18 @@
-import { AuthToken, User } from "tweeter-shared";
-import { AuthenticationService } from "../model.service/AuthenticationService";
 import { Buffer } from "buffer";
-import { Presenter, View } from "./Presenter";
+import { AuthenticationPresenter, AuthenticationView } from "./AuthenticationPresenter";
 
-export interface RegisterView extends View {
-    setIsLoading: (isLoading: boolean) => void;
-    updateUserInfo: (currentUser: User, displayedUser: User, authToken: AuthToken, rememberMe: boolean) => void;
-    navigate: (path: string) => void;
+export interface RegisterView extends AuthenticationView {
     setImageUrl: (url: string) => void;
     setImageBytes: (bytes: Uint8Array) => void;
     setImageFileExtension: (extension: string) => void;
 }
 
-export class RegisterPresenter extends Presenter<RegisterView> {
-    private authenticationService: AuthenticationService;
+export class RegisterPresenter extends AuthenticationPresenter {
+    private registerView: RegisterView;
 
     public constructor(view: RegisterView) {
         super(view);
-        this.authenticationService = new AuthenticationService();
+        this.registerView = view;
     }
 
     public async doRegister(
@@ -29,28 +24,22 @@ export class RegisterPresenter extends Presenter<RegisterView> {
         imageFileExtension: string,
         rememberMe: boolean
     ) {
-        this.view.setIsLoading(true);
-
-        this.doFailureReportingOperation(async () => {
-            const [user, authToken] = await this.authenticationService.register(
+        await this.performAuthentication(
+            () => this.authenticationService.register(
                 firstName,
                 lastName,
                 alias,
                 password,
                 imageBytes,
                 imageFileExtension
-            );
-
-            this.view.updateUserInfo(user, user, authToken, rememberMe);
-            this.view.navigate(`/feed/${user.alias}`);
-        }, "register user");
-
-        this.view.setIsLoading(false);
+            ),
+            rememberMe
+        );
     }
 
     public handleImageFile(file: File | undefined): void {
         if (file) {
-            this.view.setImageUrl(URL.createObjectURL(file));
+            this.registerView.setImageUrl(URL.createObjectURL(file));
 
             const reader = new FileReader();
             reader.onload = (event: ProgressEvent<FileReader>) => {
@@ -65,23 +54,27 @@ export class RegisterPresenter extends Presenter<RegisterView> {
                     "base64"
                 );
 
-                this.view.setImageBytes(bytes);
+                this.registerView.setImageBytes(bytes);
             };
             reader.readAsDataURL(file);
 
             // Set image file extension
             const fileExtension = this.getFileExtension(file);
             if (fileExtension) {
-                this.view.setImageFileExtension(fileExtension);
+                this.registerView.setImageFileExtension(fileExtension);
             }
         } else {
-            this.view.setImageUrl("");
-            this.view.setImageBytes(new Uint8Array());
+            this.registerView.setImageUrl("");
+            this.registerView.setImageBytes(new Uint8Array());
         }
     }
 
     public getFileExtension(file: File): string | undefined {
         return file.name.split(".").pop();
+    }
+
+    protected getOperationDescription(): string {
+        return "register user";
     }
 }
 

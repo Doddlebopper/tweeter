@@ -1,90 +1,47 @@
-import { useUserInfo, useUserInfoActions } from "../userInfo/UserInfoHooks";
-import { useState, useEffect, useRef } from "react";
-import InfiniteScroll from "react-infinite-scroll-component";
-import { AuthToken, User } from "tweeter-shared";
-import { useMessageActions } from "../toaster/MessageHooks";
-import { useParams } from "react-router-dom";
+import { User } from "tweeter-shared";
+import { AuthToken } from "tweeter-shared";
 import UserItem from "../userItem/UserItem";
-import { FolloweeView } from "../../presenter/FolloweePresenter";
-import { UserItemPresenter, UserItemView } from "../../presenter/UserItemPresenter";
-
-export const PAGE_SIZE = 10;
+import { UserItemPresenter } from "../../presenter/UserItemPresenter";
+import { PagedItemView } from "../../presenter/PagedItemPresenter";
+import { FollowService } from "../../model.service/FollowService";
+import PagedItemScroller from "./PagedItemScroller";
 
 interface UserItemScrollerProps {
   featurePath: string;
-  presenterFactory: (listener: FolloweeView) => UserItemPresenter;
+  presenterFactory: (listener: PagedItemView<User>) => UserItemPresenter;
 }
 
 const UserItemScroller = ({ 
   featurePath, 
   presenterFactory
 }: UserItemScrollerProps) => {
-  const { displayErrorMessage } = useMessageActions();
-  const [items, setItems] = useState<User[]>([]);
+  const userItemRenderer = (user: User, index: number, featurePath: string) => (
+    <div
+      key={index}
+      className="row mb-3 mx-0 px-0 border rounded bg-white"
+    >
+      <UserItem user={user} featurePath={featurePath} />
+    </div>
+  );
 
-  const { displayedUser, authToken } = useUserInfo();
-  const { setDisplayedUser } = useUserInfoActions();
-  const { displayedUser: displayedUserAliasParam } = useParams();
-
-  const listener: UserItemView = {
-    addItems: (newItems: User[]) => setItems((previousItems) => [...previousItems, ...newItems]),
-    displayErrorMessage: displayErrorMessage
-  };
-
-  const presenterRef = useRef<UserItemPresenter | null>(null);
-  if(!presenterRef.current) {
-    presenterRef.current = presenterFactory(listener);
-  }
-
-  // Update the displayed user context variable whenever the displayedUser url parameter changes. This allows browser forward and back buttons to work correctly.
-  useEffect(() => {
-    if (
-      authToken &&
-      displayedUserAliasParam &&
-      displayedUserAliasParam != displayedUser!.alias
-    ) {
-      presenterRef.current!.getUser(authToken!, displayedUserAliasParam!).then((toUser) => {
-        if (toUser) {
-          setDisplayedUser(toUser);
-        }
-      });
-    }
-  }, [displayedUserAliasParam]);
-
-  // Initialize the component whenever the displayed user changes
-  useEffect(() => {
-    reset();
-    loadMoreItems();
-  }, [displayedUser]);
-
-  const reset = async () => {
-    setItems(() => []);
-    presenterRef.current!.reset();
-  };
-
-  const loadMoreItems = async () => {
-    presenterRef.current!.loadMoreItems(authToken!, displayedUser!.alias);
+  const getUserFromPresenter = async (authToken: AuthToken, alias: string): Promise<User | null> => {
+    // We need to get the presenter instance to call getUser
+    // This is a bit tricky since we don't have direct access to the presenter here
+    // We'll create a temporary presenter just to get the user
+    const tempPresenter = presenterFactory({
+      addItems: () => {},
+      displayErrorMessage: () => {}
+    });
+    return tempPresenter.getUser(authToken, alias);
   };
 
   return (
-    <div className="container px-0 overflow-visible vh-100">
-      <InfiniteScroll
-        className="pr-0 mr-0"
-        dataLength={items.length}
-        next={() => loadMoreItems()}
-        hasMore={presenterRef.current!.hasMoreItems}
-        loader={<h4>Loading...</h4>}
-      >
-        {items.map((item, index) => (
-          <div
-            key={index}
-            className="row mb-3 mx-0 px-0 border rounded bg-white"
-          >
-            <UserItem user={item} featurePath={featurePath} />
-          </div>
-        ))}
-      </InfiniteScroll>
-    </div>
+    <PagedItemScroller<User, FollowService>
+      featurePath={featurePath}
+      presenterFactory={presenterFactory}
+      itemRenderer={userItemRenderer}
+      getUserMethod={getUserFromPresenter}
+    />
   );
 };
 
