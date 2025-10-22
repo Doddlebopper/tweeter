@@ -15,11 +15,8 @@ const UserItemScroller = ({
   featurePath, 
   presenterFactory
 }: UserItemScrollerProps) => {
-  const userItemRenderer = (user: User, index: number, featurePath: string) => (
-    <div
-      key={index}
-      className="row mb-3 mx-0 px-0 border rounded bg-white"
-    >
+  const userComponentGenerator = (user: User) => (
+    <div className="row mb-3 mx-0 px-0 border rounded bg-white">
       <UserItem user={user} featurePath={featurePath} />
     </div>
   );
@@ -39,7 +36,7 @@ const UserItemScroller = ({
     <PagedItemScroller<User, FollowService>
       featurePath={featurePath}
       presenterFactory={presenterFactory}
-      itemRenderer={userItemRenderer}
+      itemComponentGenerator={userComponentGenerator}
       getUserMethod={getUserFromPresenter}
     />
   );

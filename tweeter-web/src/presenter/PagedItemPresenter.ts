@@ -6,13 +6,13 @@ export const PAGE_SIZE = 10;
 
 export interface PagedItemView<T> extends View {
     addItems: (newItems: T[]) => void;
-
 } 
 
-export abstract class PagedItemPresenter<T, U extends Service> extends Presenter<PagedItemView<T>> {
-    private _lastItem: T | null = null;
+//abstract base class for presenters that load paged items for template pattern
+export abstract class PagedItemPresenter<T, U extends Service> extends Presenter<PagedItemView<T>> { //generic types for item and service
+    private _lastItem: T | null = null; //last generic item loaded
     private _hasMoreItems = true;
-    private _service: U;
+    private _service: U; //service to load generic services 
     private userService = new UserService();    
 
     public constructor(view: PagedItemView<T>) {
@@ -55,10 +55,10 @@ export abstract class PagedItemPresenter<T, U extends Service> extends Presenter
         return this.userService.getUser(authToken, alias);
     };
 
+    //Template method because it is implemented in the parent class that child classes can use via inheritance
     public async loadMoreItems(authToken: AuthToken, userAlias: string) {
         await this.doFailureReportingOperation(async () => {
             const [newItems, hasMore] = await this.getMoreItems(authToken, userAlias);
-
             this.hasMoreItems = hasMore;
             this.lastItem = newItems.length > 0 ? newItems[newItems.length - 1] : null;
             this.view.addItems(newItems);

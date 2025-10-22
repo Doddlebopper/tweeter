@@ -10,21 +10,22 @@ import { Service } from "../../model.service/Service";
 
 export const PAGE_SIZE = 10;
 
-interface PagedItemScrollerProps<T, U extends Service> {
+interface PagedItemScrollerProps<T , U extends Service> { //T and U are generic types for item and service types
   featurePath: string;
-  presenterFactory: (listener: PagedItemView<T>) => PagedItemPresenter<T, U>;
-  itemRenderer: (item: T, index: number, featurePath: string) => React.ReactNode;
-  getUserMethod?: (authToken: AuthToken, alias: string) => Promise<User | null>;
+  presenterFactory: (listener: PagedItemView<T>) => PagedItemPresenter<T, U>; //function as parameter to create presenters
+
+  itemComponentGenerator: (item: T) => JSX.Element; //function as parameter to generate item component 
+
+  getUserMethod?: (authToken: AuthToken, alias: string) => Promise<User | null>; //user lookup function as parameter
 }
 
-const PagedItemScroller = <T, U extends Service>({ 
-  featurePath, 
-  presenterFactory,
-  itemRenderer,
-  getUserMethod
+const PagedItemScroller = <T, U extends Service>({  //T and U are generic types for item and service types  
+  presenterFactory, //function as parameter to create presenters        
+  itemComponentGenerator,  //function as parameter to generate item component
+  getUserMethod           //user lookup function as parameter
 }: PagedItemScrollerProps<T, U>) => {
   const { displayErrorMessage } = useMessageActions();
-  const [items, setItems] = useState<T[]>([]);
+  const [items, setItems] = useState<T[]>([]); //state array using genertic type T
 
   const { displayedUser, authToken } = useUserInfo();
   const { setDisplayedUser } = useUserInfoActions();
@@ -32,17 +33,17 @@ const PagedItemScroller = <T, U extends Service>({
 
   const listener: PagedItemView<T> = {
     addItems: (newItems: T[]) => setItems((previousItems) => [...previousItems, ...newItems]),
-    displayErrorMessage: displayErrorMessage
+    displayErrorMessage: displayErrorMessage  // Function from hook deduplication
   };
 
   const presenterRef = useRef<PagedItemPresenter<T, U> | null>(null);
   if (!presenterRef.current) {
-    presenterRef.current = presenterFactory(listener);
+    presenterRef.current = presenterFactory(listener); //factory function to create presenter
   }
 
   const userService = new UserService();
 
-  // Update the displayed user context variable whenever the displayedUser url parameter changes. This allows browser forward and back buttons to work correctly.
+  
   useEffect(() => {
     if (
       authToken &&
@@ -69,10 +70,10 @@ const PagedItemScroller = <T, U extends Service>({
 
   const reset = async () => {
     setItems(() => []);
-    presenterRef.current!.reset();
+    presenterRef.current!.reset();  // use for presenters template method
   };
 
-  const loadMoreItems = async () => {
+  const loadMoreItems = async () => { //use for presenters template method 
     presenterRef.current!.loadMoreItems(authToken!, displayedUser!.alias);
   };
 
@@ -85,9 +86,11 @@ const PagedItemScroller = <T, U extends Service>({
         hasMore={presenterRef.current!.hasMoreItems}
         loader={<h4>Loading...</h4>}
       >
-        {items.map((item, index) => 
-          itemRenderer(item, index, featurePath)
-        )}
+        {items.map((item, index) => (
+          <div key={index}>
+            {itemComponentGenerator(item)}
+          </div>
+        ))}
       </InfiniteScroll>
     </div>
   );

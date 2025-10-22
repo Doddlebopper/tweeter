@@ -14,15 +14,15 @@ const StatusItemScroller = ({
   featurePath, 
   presenterFactory
 }: StatusItemScrollerProps) => {
-  const statusItemRenderer = (status: Status, index: number, featurePath: string) => (
-    <StatusItem key={index} status={status} featurePath={featurePath} />
+  const statusComponentGenerator = (status: Status) => (
+    <StatusItem status={status} featurePath={featurePath} />
   );
 
   return (
     <PagedItemScroller<Status, StatusService>
       featurePath={featurePath}
       presenterFactory={presenterFactory}
-      itemRenderer={statusItemRenderer}
+      itemComponentGenerator={statusComponentGenerator}
     />
   );
 };

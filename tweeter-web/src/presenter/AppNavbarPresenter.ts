@@ -10,9 +10,13 @@ export interface AppNavbarView extends MessageView {
 export class AppNavbarPresenter extends Presenter<AppNavbarView> {
     private authenticationService: AuthenticationService;
 
-    public constructor(view: AppNavbarView) {
+    public constructor(view: AppNavbarView, authenticationService?: AuthenticationService) {
         super(view);
-        this.authenticationService = new AuthenticationService();
+        this.authenticationService = authenticationService ?? new AuthenticationService();
+    }
+
+    public get service(): any {
+        return this.authenticationService;
     }
 
     public async logOut(authToken: AuthToken) {
