@@ -1,9 +1,10 @@
-import { useContext } from "react"; 
+import { useContext, useRef } from "react"; 
 import { UserInfoContext, UserInfoActionsContext } from "./UserInfoContexts";
 import { UserInfo } from "./UserInfo";
 import { useNavigate } from "react-router-dom";
-import { AuthToken, FakeData, User } from "tweeter-shared";
+import { AuthToken, User } from "tweeter-shared";
 import { useMessageActions } from "../toaster/MessageHooks";
+import { UserService } from "../../model.service/UserService";
 
 export const useUserInfo = (): UserInfo => {
   return useContext(UserInfoContext);
@@ -18,6 +19,11 @@ export const useUserNavigation = () => {
   const { setDisplayedUser } = useUserInfoActions();
   const { displayErrorMessage } = useMessageActions();
   const navigate = useNavigate();
+  const userServiceRef = useRef<UserService>();
+
+  if (!userServiceRef.current) {
+    userServiceRef.current = new UserService();
+  }
 
   const extractAlias = (value: string): string => {
     const index = value.indexOf("@");
@@ -28,8 +34,7 @@ export const useUserNavigation = () => {
     authToken: AuthToken,
     alias: string
   ): Promise<User | null> => {
-    // TODO: Replace with the result of calling server
-    return FakeData.instance.findUserByAlias(alias);
+    return userServiceRef.current!.getUser(authToken, alias);
   };
 
   const navigateToUser = async (

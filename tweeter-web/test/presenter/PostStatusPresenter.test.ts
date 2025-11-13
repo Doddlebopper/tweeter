@@ -45,7 +45,6 @@ describe("PostStatusPresenter", () => {
         when(mockService.postStatus(anything(), anything())).thenThrow(error);
 
         await postStatusPresenter.submitPost(postText, currentUser, authToken);
-        //let [errorString] = capture(mockPostStatusPresenterView.displayErrorMessage).last();
 
         verify(mockPostStatusPresenterView.deleteMessage(anything())).once();
         verify(mockPostStatusPresenterView.displayErrorMessage('failed to post the status because of exception: Posting failed')).once();

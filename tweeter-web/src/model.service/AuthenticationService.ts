@@ -1,49 +1,90 @@
-import { AuthToken, User, FakeData } from "tweeter-shared";
 import { Buffer } from "buffer";
+import {
+  AuthToken,
+  User,
+  type LoginResponse,
+  type RegisterResponse,
+  type TweeterResponse,
+} from "tweeter-shared";
+import { ServerFacade } from "../network/ServerFacade";
 import { Service } from "./Service";
 
 export class AuthenticationService implements Service {
-    public async login(
-        alias: string,
-        password: string
-    ): Promise<[User, AuthToken]> {
-        // TODO: Replace with the result of calling the server
-        const user = FakeData.instance.firstUser;
+  private readonly serverFacade = ServerFacade.getInstance();
 
-        if (user === null) {
-            throw new Error("Invalid alias or password");
-        }
+  public async login(alias: string, password: string): Promise<[User, AuthToken]> {
+    const response: LoginResponse = await this.serverFacade.login({ alias, password });
+    this.ensureSuccess(response, "Unable to login at this time.");
 
-        return [user, FakeData.instance.authToken];
+    if (!response.user || !response.authToken) {
+      throw new Error("Login succeeded but user data was missing from the server response.");
     }
 
-    public async register(
-        firstName: string,
-        lastName: string,
-        alias: string,
-        password: string,
-        userImageBytes: Uint8Array,
-        imageFileExtension: string
-    ): Promise<[User, AuthToken]> {
-        // Not needed now, but will be needed when you make the request to the server in milestone 3
-        const imageStringBase64: string =
-            Buffer.from(userImageBytes).toString("base64");
-
-        // TODO: Replace with the result of calling the server
-        const user = FakeData.instance.firstUser;
-
-        if (user === null) {
-            throw new Error("Invalid registration");
-        }
-
-        return [user, FakeData.instance.authToken];
+    const user = User.fromDto(response.user);
+    if (!user) {
+      throw new Error("Login succeeded but user data was malformed.");
     }
 
-    public async logout(authToken: AuthToken): Promise<void> {
-        // Pause so we can see the logging out message. Delete when the call to the server is implemented.
-        await new Promise((res) => setTimeout(res, 1000));
-        
-        // TODO: Call the server to logout
+    const authToken = new AuthToken(
+      response.authToken.token,
+      response.authToken.timestamp
+    );
+
+    return [user, authToken];
+  }
+
+  public async register(
+    firstName: string,
+    lastName: string,
+    alias: string,
+    password: string,
+    userImageBytes: Uint8Array,
+    imageFileExtension: string
+  ): Promise<[User, AuthToken]> {
+    const imageStringBase64 = Buffer.from(userImageBytes).toString("base64");
+
+    const response: RegisterResponse = await this.serverFacade.register({
+      firstName,
+      lastName,
+      alias,
+      password,
+      imageStringBase64,
+      imageFileExtension,
+    });
+
+    this.ensureSuccess(response, "Unable to register at this time.");
+
+    if (!response.user || !response.authToken) {
+      throw new Error("Registration succeeded but user data was missing from the server response.");
     }
+
+    const user = User.fromDto(response.user);
+    if (!user) {
+      throw new Error("Registration succeeded but user data was malformed.");
+    }
+
+    const authToken = new AuthToken(
+      response.authToken.token,
+      response.authToken.timestamp
+    );
+
+    return [user, authToken];
+  }
+
+  public async logout(authToken: AuthToken): Promise<void> {
+    const response = await this.serverFacade.logout({
+      authToken: {
+        token: authToken.token,
+        timestamp: authToken.timestamp,
+      },
+    });
+
+    this.ensureSuccess(response, "Unable to logout at this time.");
+  }
+
+  private ensureSuccess(response: TweeterResponse, fallbackMessage: string): void {
+    if (!response.success) {
+      throw new Error(response.message ?? fallbackMessage);
+    }
+  }
 }
-

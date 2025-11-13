@@ -2,10 +2,10 @@ import { MemoryRouter } from 'react-router-dom';
 import Login from '../../../src/components/authentication/login/Login';
 import { render, screen } from '@testing-library/react';
 import { userEvent } from '@testing-library/user-event';
-import React from 'react';
 import "@testing-library/jest-dom";
 import { instance, mock, verify } from '@typestrong/ts-mockito';
 import { LoginPresenter } from '../../../src/presenter/LoginPresenter';
+import React from 'react';
 
 describe('Login Component', () => {
     it("starts with the sign in button disabled", () => {
